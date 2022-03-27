@@ -3,10 +3,9 @@ package ca.mironov.utils.logmerge;
 import java.io.*;
 import java.util.Optional;
 
-class LogStream {
+class LogStream implements AutoCloseable {
 
     private final String name;
-    @SuppressWarnings("FieldNotUsedInToString")
     private final BufferedReader reader;
     private String line;
 
@@ -24,9 +23,17 @@ class LogStream {
         return Optional.ofNullable(line);
     }
 
-    @SuppressWarnings("FinalMethod")
     final void nextLine() throws IOException {
         line = reader.readLine();
+    }
+
+    @Override
+    public void close() {
+        try {
+            reader.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

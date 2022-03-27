@@ -7,28 +7,28 @@ import java.util.*;
 class LogMerger {
 
     static Optional<LogEntry> findEarliestLine(List<? extends LogStream> logStreams) throws IOException {
-        int earliestIndex = -1;
-        Instant earliestTs = null;
+        OptionalInt earliestIndex = OptionalInt.empty();
+        Optional<Instant> earliestTs = Optional.empty();
         for (int i = 0; i < logStreams.size(); i++) {
-            LogStream logStream = logStreams.get(i);
-            if (logStream.getCurrentLine().isPresent()) {
-                Optional<Instant> maybeTs = LogParser.parseTimestamp(logStream.getCurrentLine().get());
+            Optional<String> logStreamCurrentLine = logStreams.get(i).getCurrentLine();
+            if (logStreamCurrentLine.isPresent()) {
+                Optional<Instant> maybeTs = LogParser.parseTimestamp(logStreamCurrentLine.get());
                 if (maybeTs.isPresent()) {
-                    if (earliestTs == null || maybeTs.get().isBefore(earliestTs)) {
-                        earliestIndex = i;
-                        earliestTs = maybeTs.get();
+                    if (earliestTs.isEmpty() || maybeTs.get().isBefore(earliestTs.get())) {
+                        earliestIndex = OptionalInt.of(i);
+                        earliestTs = maybeTs;
                     }
                 } else {
-                    earliestIndex = i;
+                    earliestIndex = OptionalInt.of(i);
                     break;
                 }
             }
         }
-        if (earliestIndex != -1) {
-            LogStream earliestLogStream = logStreams.get(earliestIndex);
-            String earliestLine = earliestLogStream.getCurrentLine().orElseThrow();
+        if (earliestIndex.isPresent()) {
+            LogStream earliestLogStream = logStreams.get(earliestIndex.getAsInt());
+            LogEntry logEntry = new LogEntry(earliestLogStream.getName(), earliestLogStream.getCurrentLine().orElseThrow());
             earliestLogStream.nextLine();
-            return Optional.of(new LogEntry(earliestLogStream.getName(), earliestLine));
+            return Optional.of(logEntry);
         } else {
             return Optional.empty();
         }
